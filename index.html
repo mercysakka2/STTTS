@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Integrasi TTS dan STT</title>
+</head>
+<body>
+    <h1>Speech to text to speech</h1>
+
+    <!-- Text Input for TTS -->
+    <textarea id="ttsInput" placeholder="Masukkan teks di sini..."></textarea><br>
+
+    <!-- Speech-to-Text (STT) Button -->
+    <button onclick="startSpeechRecognition()">Mulai Rekam Ucapan</button><br><br>
+
+    <!-- Text-to-Speech (TTS) Button -->
+    <button onclick="generateAudio()">Hasilkan Audio</button><br><br>
+
+    <!-- Audio Element for TTS Output -->
+    <audio id="ttsAudio" controls></audio>
+
+    <script>
+        // Generate Audio with TTS
+        async function generateAudio() {
+            const text = document.getElementById('ttsInput').value;
+            if (!text) return alert('Silakan masukkan teks!');
+
+            const response = await fetch('/generate-audio', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ text })
+            });
+
+            const data = await response.json();
+            if (data.audioUrl) {
+                document.getElementById('ttsAudio').src = data.audioUrl;
+            } else {
+                alert('Gagal menghasilkan audio.');
+            }
+        }
+
+        // Speech-to-Text using Web Speech API
+        function startSpeechRecognition() {
+            const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.lang = 'id-ID'; // Set to Indonesian (change if needed)
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            recognition.onstart = () => {
+                console.log('Voice recognition started. Speak into the microphone.');
+            };
+
+            recognition.onspeechend = () => {
+                console.log('Voice recognition ended.');
+                recognition.stop();
+            };
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                document.getElementById('ttsInput').value = transcript; // Set recognized text into textarea
+                console.log('Recognized speech:', transcript);
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+            };
+
+            recognition.start(); // Start listening
+        }
+    </script>
+</body>
+</html>
